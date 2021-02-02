@@ -23,14 +23,7 @@ def process_play(geese: list, food: list, moves: tuple):
     for a, b in itertools.combinations(geese, r=2):
         doubles.extend([e for e in a if e in b])
 
-    t = False
-    for goose in geese:
-        for e in goose:
-            if e in doubles:
-                t = True
-        if t:
-            goose.insert(0, -len(goose))
-        t = False
+    geese = [goose if len(set(goose).intersection(doubles)) == 0 else [] for goose in geese]
 
     while len(food) < 2:
         food.append(choice(tuple(RANGE.difference(geese_occupied + food))))
@@ -80,9 +73,9 @@ class Node:
 
         [shuffle(p) for p in self.plays]
 
-        self.count = 0
-        self.score = 0
-        self.value = [0] * len(geese) if max_depth > depth else [len(goose) + depth for goose in geese]
+        self.count = [0] * len(geese)
+        self.score = [0] * len(geese)
+        self.value = [len(goose) + depth if max_depth == depth or len(goose) == 0 else 0 for goose in geese]
 
     def initialize_plays(self):
         occupied_geese = [item for sublist in self.geese for item in sublist]
@@ -104,9 +97,13 @@ class Node:
 
         plays = tuple(plays)
 
-        if plays not in self.children.keys:
+        if plays not in self.children.keys():
             geese, food = process_play(self.geese, self.food, plays)
-            self.children[plays] = Node(geese=geese, food=food, played=plays, depth=self.depth + 1)
+            self.children[plays] = Node(geese=geese,
+                                        food=food,
+                                        played=plays,
+                                        depth=self.depth + 1,
+                                        max_depth=self.max_depth)
 
         return self.children[plays]
 
