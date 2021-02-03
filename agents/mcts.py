@@ -1,4 +1,4 @@
-from random import shuffle, choice
+from random import shuffle, choice, choices
 import math
 from time import time
 from collections import defaultdict
@@ -103,7 +103,7 @@ class Node:
                 scores = [ucb1(child_score=score[key[i]], child_count=count[key[i]], parent_count=self.count[i]) for key
                           in keys]
 
-                plays.append(keys[scores.index(max(scores))][i])
+                plays.append(choices(keys, weights=scores)[0][i])  # Choices returns a list with 1 element
 
         plays = tuple(plays)
 
