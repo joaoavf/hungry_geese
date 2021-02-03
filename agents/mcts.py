@@ -4,8 +4,10 @@ from time import time
 from collections import defaultdict
 import itertools
 from copy import deepcopy
+from kaggle_environments.envs.hungry_geese.hungry_geese import Observation, Action
 
 RANGE = set(range(11 * 7))
+ACTIONS = [Action.WEST.name, Action.EAST.name, Action.NORTH.name, Action.SOUTH.name]
 
 
 def process_play(geese: list, food: list, moves: tuple):
@@ -45,15 +47,23 @@ def possible_moves(goose):
     return [left, right, up, down]
 
 
-def manager(current_node, max_time):
+def manager(current_node, max_time, player_index):
     t0 = time()
 
     while time() - t0 < max_time:
         tree_search(current_node)
 
-    scores = [child.score for child in current_node.children]
+    scores = defaultdict(int)
+    count = defaultdict(int)
+    for key, child in current_node.children.items():
+        scores[key[player_index]] += child.score[player_index]
+        count[key[player_index]] += child.count[player_index]
 
-    return current_node.children[scores.index(max(scores))].play
+    inverted_dict = {v: k for k, v in scores.items()}
+
+    index = possible_moves(current_node.geese).index(inverted_dict[max(list(scores.values()))])
+
+    return ACTIONS[index]
 
 
 def ucb1(child_score, child_count, parent_count, exploration_parameter=math.sqrt(2)):
@@ -62,7 +72,7 @@ def ucb1(child_score, child_count, parent_count, exploration_parameter=math.sqrt
 
 
 class Node:
-    def __init__(self, geese, food, played, reward=None, depth=0, max_depth=10):
+    def __init__(self, geese, food, played=None, reward=None, depth=0, max_depth=10):
         self.geese = geese
         self.food = food
         self.played = played
@@ -136,3 +146,14 @@ def tree_search(node):
     node.count = [node.count[i] + 1 for i, _ in enumerate(node.score)]
 
     return result
+
+
+def agent(obs_dict, config_dict):
+    observation = Observation(obs_dict)
+    player_index = observation.index
+    geese = observation.geese
+    food = observation.food
+
+    current_node = Node(geese=geese, food=food)
+
+    return manager(current_node=current_node, max_time=5, player_index=player_index)
