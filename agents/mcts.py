@@ -3,6 +3,7 @@ import math
 from time import time
 from collections import defaultdict
 import itertools
+from copy import deepcopy
 
 RANGE = set(range(11 * 7))
 
@@ -107,7 +108,7 @@ class Node:
         plays = tuple(plays)
 
         if plays not in self.children.keys():
-            geese, food = process_play(self.geese, self.food, plays)
+            geese, food = process_play(deepcopy(self.geese), self.food[:], plays)
 
             reward = [len(g1) + self.depth if self.max_depth == self.depth or len(g2) == 0 else 0 for g1, g2 in
                       zip(self.geese, geese)]
