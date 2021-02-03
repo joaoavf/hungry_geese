@@ -84,19 +84,25 @@ class Node:
     def initialize_plays(self):
         occupied_geese = [item for sublist in self.geese for item in sublist]
         moves = [possible_moves(goose) for goose in self.geese]
-        return [[e for e in move if e not in occupied_geese] for move in moves]
+        available_moves = [[e for e in move if e not in occupied_geese] for move in moves]
+        return [a if len(a) else m for a, m in zip(available_moves, moves)]
 
     def explore_or_exploit(self):
         plays = []
+        print(self.children.keys())
         for i, play in enumerate(self.plays):
             if play:
                 plays.append(play.pop())
             else:
-                value, count = defaultdict(int), defaultdict(int)
+                score, count = defaultdict(int), defaultdict(int)
                 for key in self.children.keys():
-                    value[key[i]] += self.children[key].value
-                    count[key[i]] += self.children[key].score
-                scores = [ucb1(value[key], count[key], self.count) for key in value.keys()]
+                    count[key[i]] += self.children[key].count[i]
+                    score[key[i]] += self.children[key].score[i]
+
+                scores = [ucb1(child_score=score[key],
+                               child_count=count[key],
+                               parent_count=self.count) for key in
+                          count.keys()]
                 plays.append(self.plays[i][scores.index(max(scores))])
 
         plays = tuple(plays)
