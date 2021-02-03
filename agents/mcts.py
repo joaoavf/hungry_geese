@@ -89,21 +89,20 @@ class Node:
 
     def explore_or_exploit(self):
         plays = []
-        print(self.children.keys())
+        keys = list(self.children.keys())
         for i, play in enumerate(self.plays):
             if play:
                 plays.append(play.pop())
             else:
                 score, count = defaultdict(int), defaultdict(int)
-                for key in self.children.keys():
+                for key in keys:
                     count[key[i]] += self.children[key].count[i]
                     score[key[i]] += self.children[key].score[i]
 
-                scores = [ucb1(child_score=score[key],
-                               child_count=count[key],
-                               parent_count=self.count) for key in
-                          count.keys()]
-                plays.append(self.plays[i][scores.index(max(scores))])
+                scores = [ucb1(child_score=score[key[i]], child_count=count[key[i]], parent_count=self.count[i]) for key
+                          in keys]
+
+                plays.append(keys[scores.index(max(scores))][i])
 
         plays = tuple(plays)
 
