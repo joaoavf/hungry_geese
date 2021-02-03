@@ -61,7 +61,7 @@ def ucb1(child_score, child_count, parent_count, exploration_parameter=math.sqrt
 
 
 class Node:
-    def __init__(self, geese, food, played, depth=0, max_depth=10):
+    def __init__(self, geese, food, played, reward=None, depth=0, max_depth=10):
         self.geese = geese
         self.food = food
         self.played = played
@@ -75,7 +75,11 @@ class Node:
 
         self.count = [0] * len(geese)
         self.score = [0] * len(geese)
-        self.value = [len(goose) + depth if max_depth == depth or len(goose) == 0 else 0 for goose in geese]
+
+        if reward is None:
+            self.value = [0 for _ in self.geese]
+        else:
+            self.value = reward
 
     def initialize_plays(self):
         occupied_geese = [item for sublist in self.geese for item in sublist]
@@ -99,9 +103,14 @@ class Node:
 
         if plays not in self.children.keys():
             geese, food = process_play(self.geese, self.food, plays)
+
+            reward = [len(g1) + self.depth if self.max_depth == self.depth or len(g2) == 0 else 0 for g1, g2 in
+                      zip(self.geese, geese)]
+
             self.children[plays] = Node(geese=geese,
                                         food=food,
                                         played=plays,
+                                        reward=reward,
                                         depth=self.depth + 1,
                                         max_depth=self.max_depth)
 
