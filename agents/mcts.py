@@ -62,7 +62,7 @@ def manager(current_node, max_time, player_index):
 
     inverted_dict = {v: k for k, v in scores.items()}
 
-    index = possible_moves(current_node.geese).index(inverted_dict[max(list(scores.values()))])
+    index = possible_moves(current_node.geese[player_index]).index(inverted_dict[max(list(scores.values()))])
 
     return ACTIONS[index]
 
