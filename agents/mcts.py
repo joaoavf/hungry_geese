@@ -10,14 +10,16 @@ RANGE = set(range(11 * 7))
 ACTIONS = [Action.WEST.name, Action.EAST.name, Action.NORTH.name, Action.SOUTH.name]
 
 
-def process_play(geese: list, food: list, moves: tuple):
+def process_play(geese: list, food: list, step: int, moves: tuple):
     for goose, move in zip(geese, moves):
-
         goose.insert(0, move)
         if move in food:
             food.pop(food.index(move))
         else:
             goose.pop()
+
+    if step % 40 == 0:
+        [goose.pop(-1) for goose in geese if len(goose)]
 
     geese_occupied = [item for sublist in geese for item in sublist]
 
@@ -73,9 +75,10 @@ def ucb1(child_score, child_count, parent_count, exploration_parameter=math.sqrt
 
 
 class Node:
-    def __init__(self, geese, food, played=None, reward=None, depth=0, max_depth=10):
+    def __init__(self, geese, food, step, played=None, reward=None, depth=0, max_depth=10):
         self.geese = geese
         self.food = food
+        self.step = step
         self.played = played
         self.depth = depth
         self.max_depth = max_depth
@@ -123,13 +126,14 @@ class Node:
         plays = tuple(plays)
 
         if plays not in self.children.keys():
-            geese, food = process_play(deepcopy(self.geese), self.food[:], plays)
+            geese, food = process_play(deepcopy(self.geese), self.food[:], self.step + 1, plays)
 
             reward = [len(g1) + self.depth if self.max_depth == self.depth or len(g2) == 0 else 0 for g1, g2 in
                       zip(self.geese, geese)]
 
             self.children[plays] = Node(geese=geese,
                                         food=food,
+                                        step=self.step + 1,
                                         played=plays,
                                         reward=reward,
                                         depth=self.depth + 1,
@@ -158,7 +162,8 @@ def agent(obs_dict, config_dict):
     player_index = observation.index
     geese = observation.geese
     food = observation.food
+    step = observation.step
 
-    current_node = Node(geese=geese, food=food)
+    current_node = Node(geese=geese, food=food, step=step)
 
     return manager(current_node=current_node, max_time=5, player_index=player_index)
