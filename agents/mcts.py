@@ -113,7 +113,11 @@ class Node:
                 scores = [ucb1(child_score=score[key[i]], child_count=count[key[i]], parent_count=self.count[i]) for key
                           in keys]
 
-                plays.append(choices(keys, weights=scores)[0][i])  # Choices returns a list with 1 element
+                if keys:
+                    plays.append(choices(keys, weights=scores)[0][i])  # Choices returns a list with 1 element
+
+                else:
+                    plays.append(None)
 
         plays = tuple(plays)
 
