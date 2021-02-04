@@ -14,6 +14,8 @@ import time
 from kaggle_environments import make, Environment, environments
 from copy import deepcopy
 
+MOVE_LIST = [Action.WEST.name, Action.EAST.name, Action.NORTH.name, Action.SOUTH.name]
+
 
 @dataclass
 class SARSD:
@@ -42,7 +44,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.obs_shape, self.num_actions = obs_shape, num_actions
         self.net = torch.nn.Sequential(
-            torch.nn.Linear(obs_shape[0], 128),
+            torch.nn.Linear(obs_shape, 128),
             torch.nn.Linear(128, 256), torch.nn.ReLU(),
             torch.nn.Linear(256, 128), torch.nn.ReLU(),
             torch.nn.Linear(128, num_actions), torch.nn.Tanh()
@@ -69,13 +71,13 @@ def pre_process(observation):
 
     for i, goose in enumerate(geese):
         value = [1, 2][index == i]
-        for i, el in enumerate(goose):
-            flat_board[el] = value + [0., 0.5][i == 0]  # Different number if head
+        for el in goose:
+            flat_board[el] = value
 
     for el in food:
         flat_board[el] = -1
 
-    return flat_board.reshape(7, 11)
+    return flat_board
 
 
 class Agent:
@@ -88,7 +90,7 @@ class Agent:
         num_actions = self.model.num_actions
 
         if np.random.random() < epsilon:
-            available_actions = [c for i, c in enumerate(range(num_actions)) if observation[i] == 0]
+            available_actions = list(range(num_actions))
             return int(np.random.choice(available_actions)), np.max(prediction)
         else:
             for i in range(num_actions):
@@ -138,7 +140,7 @@ class ConnectX(Environment):
 
 
 class Trainer:
-    def __init__(self, test=False, checkpoint=None, device='cpu', min_rb_size=100_000, sample_size=4_096,
+    def __init__(self, test=False, checkpoint=None, device='cpu', min_rb_size=10_000, sample_size=4_096,
                  eps=1, eps_min=0.1, eps_decay=0.999999, env_steps_before_train=64, tgt_model_update=250):
         if not test:
             wandb.init(project="dqn-tutorial", name="dqn-minimax")
@@ -164,13 +166,9 @@ class Trainer:
 
         self.last_observation = self.env.reset()[0]['observation']
 
-        print(self.last_observation)
-
         self.last_observation = pre_process(observation=self.last_observation)
 
-        obs_space = (7, 11)
-
-        model = Model(obs_space, 4).to(device)
+        model = Model(obs_shape=77, num_actions=4).to(device)
         if checkpoint is not None:
             print('Models loaded:')
             model.load_state_dict(torch.load(checkpoint))
@@ -201,7 +199,7 @@ class Trainer:
 
         action, prediction = self.agent.get_action(observation=self.last_observation, epsilon=self.eps)
 
-        observation, reward, done = self.process_action(action)
+        observation, reward, done = self.process_action(MOVE_LIST[action])
 
         self.rb.insert(SARSD(self.last_observation, action, reward, observation, done))
 
@@ -225,7 +223,8 @@ class Trainer:
         reward = p_dict[self.active_player]['reward']
         done = self.env.done
 
-        observation = p_dict[[1, 0][self.active_player]]['observation']
+        observation = p_dict[0]['observation']
+        observation['index'] = self.active_player
         observation = pre_process(observation=observation)
 
         reward = 1 if reward == 1 else 0
@@ -241,14 +240,14 @@ class Trainer:
 
     def update_target_model_routine(self):
         self.agent.update_target_model()
-        self.agent.save_model_to_disk(f'models/{self.step_num}.pth')
+        # self.agent.save_model_to_disk(f'models/{self.step_num}.pth')
         self.epochs_since_tgt = 0
 
     def train_model_routine(self):
         self.episode_rewards = []
         self.epochs_since_tgt += 1
         self.steps_since_train = 0
-        loss = self.agent.train_step(self.rb.sample(self.sample_size), self.env.action_space.n, self.device)
+        loss = self.agent.train_step(self.rb.sample(self.sample_size), 4, self.device)
         self.update_wandb(loss=loss)
 
     def update_wandb(self, loss):
@@ -268,9 +267,6 @@ class Trainer:
 
 def main(test=False, checkpoint=None, device='cpu'):
     game = Trainer(test=test, checkpoint=checkpoint, device=device)
-    try:
-        while True:
-            game.play()
 
-    except KeyboardInterrupt:
-        pass
+    while True:
+        game.play()
