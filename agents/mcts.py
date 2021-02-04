@@ -166,6 +166,6 @@ def agent(obs_dict, config_dict):
     food = observation.food
     step = observation.step
 
-    current_node = Node(geese=geese, food=food, step=step)
+    current_node = Node(geese=geese, food=food, step=step, max_depth=4)
 
-    return manager(current_node=current_node, max_time=5, player_index=player_index)
+    return manager(current_node=current_node, max_time=.25, player_index=player_index)
