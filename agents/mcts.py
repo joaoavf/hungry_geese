@@ -26,7 +26,8 @@ def process_play(geese: list, food: list, moves: tuple):
     for a, b in itertools.combinations(geese, r=2):
         doubles.extend([e for e in a if e in b])
 
-    geese = [goose if len(set(goose).intersection(doubles)) == 0 else [] for goose in geese]
+    geese = [goose if len(set(goose).intersection(doubles)) == 0 and len(set(goose)) == len(goose) else []
+             for goose in geese]
 
     while len(food) < 2:
         food.append(choice(tuple(RANGE.difference(geese_occupied + food))))
