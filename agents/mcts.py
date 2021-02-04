@@ -50,17 +50,19 @@ def possible_moves(goose):
     return [left, right, up, down]
 
 
-def manager(current_node, max_time, player_index):
+def manager(current_node, max_time, player_index, n_nodes=10):
     t0 = time()
 
-    while time() - t0 < max_time:
-        tree_search(current_node)
-
     scores = defaultdict(int)
-    count = defaultdict(int)
-    for key, child in current_node.children.items():
-        scores[key[player_index]] += child.score[player_index]
-        count[key[player_index]] += child.count[player_index]
+
+    while time() - t0 < max_time:
+        node = deepcopy(current_node)
+
+        while time() - t0 < max_time / n_nodes:
+            tree_search(node)
+
+            for key, child in node.children.items():
+                scores[key[player_index]] += child.score[player_index]
 
     inverted_dict = {v: k for k, v in scores.items()}
 
